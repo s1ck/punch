@@ -4,6 +4,9 @@ version = "0.1.0"
 authors = ["Martin Junghanns <nerdfaktor42@mailbox.org>"]
 edition = "2018"
 description = "A simple time clock tool."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/s1ck/punch"
+default-run = "punch"
 
 [dependencies]
 clap = "2.33.3"
@@ -15,3 +18,7 @@ tabular = "0.1.4"
 
 [dev-dependencies]
 assert_cmd = "1.0.1"
+
+[[bin]]
+name = "punch"
+path = "src/main.rs"

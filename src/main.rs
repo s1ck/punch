@@ -1,3 +1,22 @@
+/*!
+
+A simple time clock tool.
+
+# Usage
+
+```bash
+
+# Start working on tasks
+punch in task1 [task2...]
+
+# List all running tasks
+punch list
+
+# Stop working on tasks
+punch out task1 [task2...]
+```
+
+*/
 extern crate clap;
 
 use core::fmt;
@@ -69,7 +88,7 @@ fn stop(data: &mut Data, tasks: Vec<String>) -> Result<(), PunchError> {
         let timestamp = data.tasks.remove(&task).unwrap();
         let duration = PrettyDuration::new(&(Local::now() - Local.timestamp(timestamp, 0)));
         println!(
-            "Stopping task `{}`, was running: {}",
+            "Stopped task `{}` after {}",
             task,
             duration
         );
