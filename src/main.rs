@@ -1,5 +1,4 @@
 /*!
-
 A simple time clock tool.
 
 # Usage
