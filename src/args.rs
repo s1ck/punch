@@ -1,5 +1,4 @@
 use clap::{App, Arg, ArgMatches, SubCommand};
-use std::sync::atomic::Ordering::AcqRel;
 
 #[derive(Debug)]
 pub enum Action {

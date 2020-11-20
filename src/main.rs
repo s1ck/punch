@@ -1,19 +1,22 @@
 mod args;
+mod data;
 
 extern crate clap;
 
-use clap::{App, Arg, SubCommand, ArgMatches};
+use crate::data::{load, store};
 use args::args;
-use crate::args::Action;
+use std::io;
 
-fn main() {
+fn main() -> Result<(), io::Error> {
+    let data = load()?;
     let action = args();
     println!("{:?}", action);
+    store(data)?;
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use assert_cmd::Command;
 
     #[test]
