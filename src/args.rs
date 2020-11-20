@@ -2,16 +2,16 @@ use clap::{App, Arg, ArgMatches, SubCommand};
 
 #[derive(Debug)]
 pub enum Action {
-    START(Vec<String>),
-    STOP(Vec<String>),
-    LIST,
+    Start(Vec<String>),
+    Stop(Vec<String>),
+    List,
 }
 
 pub fn args() -> Action {
     match arg_matches().subcommand() {
-        ("in", Some(args)) => Action::START(tasks(args, "IN")),
-        ("out", Some(args)) => Action::STOP(tasks(args, "OUT")),
-        ("list", _) => Action::LIST,
+        ("in", Some(args)) => Action::Start(tasks(args, "IN")),
+        ("out", Some(args)) => Action::Stop(tasks(args, "OUT")),
+        ("list", _) => Action::List,
         (action, _) => panic!("Invalid action: {}", action),
     }
 }
