@@ -1,0 +1,12 @@
+[package]
+name = "punch"
+version = "0.1.0"
+authors = ["Martin Junghanns <nerdfaktor42@mailbox.org>"]
+edition = "2018"
+description = "A simple time clock tool."
+
+[dependencies]
+clap = "2.33.3"
+
+[dev-dependencies]
+assert_cmd = "1.0.1"
