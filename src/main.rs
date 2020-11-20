@@ -13,6 +13,9 @@ punch list
 
 # Stop working on tasks
 punch out task1 [task2...]
+
+# Print history of all tasks
+punch history
 ```
 
 */
@@ -23,14 +26,13 @@ use fmt::Display;
 use std::error::Error;
 use std::io;
 
-use chrono::{Duration, Local, TimeZone};
+use chrono::{Local, TimeZone};
 use serde::export::Formatter;
-use tabular::{Row, Table};
 
 use args::args;
 
 use crate::args::Action;
-use crate::data::{Data, load, store};
+use crate::data::{load, store, Data, PrettyDuration};
 
 mod args;
 mod data;
@@ -41,7 +43,14 @@ fn main() -> Result<(), io::Error> {
     let result = match args() {
         Action::Start(tasks) => start(&mut data, tasks),
         Action::Stop(tasks) => stop(&mut data, tasks),
-        Action::List => list(&data),
+        Action::List => {
+            print!("{}", data.table_running());
+            Ok(())
+        }
+        Action::History => {
+            print!("{}", data.table_history());
+            Ok(())
+        }
     };
 
     if let Err(err) = result {
@@ -55,7 +64,7 @@ fn main() -> Result<(), io::Error> {
 fn start(data: &mut Data, tasks: Vec<String>) -> Result<(), PunchError> {
     let existing_tasks = tasks
         .iter()
-        .filter(|t| data.tasks.contains_key(*t))
+        .filter(|t| data.running.contains_key(*t))
         .map(|t| t.clone())
         .collect::<Vec<_>>();
 
@@ -66,7 +75,7 @@ fn start(data: &mut Data, tasks: Vec<String>) -> Result<(), PunchError> {
     for task in tasks {
         let now = Local::now();
         println!("Starting task `{}` at {}", task, now);
-        data.tasks.insert(task, now.timestamp());
+        data.running.insert(task, now.timestamp());
     }
 
     Ok(())
@@ -75,7 +84,7 @@ fn start(data: &mut Data, tasks: Vec<String>) -> Result<(), PunchError> {
 fn stop(data: &mut Data, tasks: Vec<String>) -> Result<(), PunchError> {
     let missing_tasks = tasks
         .iter()
-        .filter(|t| !data.tasks.contains_key(*t))
+        .filter(|t| !data.running.contains_key(*t))
         .map(|t| t.clone())
         .collect::<Vec<_>>();
 
@@ -84,46 +93,14 @@ fn stop(data: &mut Data, tasks: Vec<String>) -> Result<(), PunchError> {
     }
 
     for task in tasks {
-        let timestamp = data.tasks.remove(&task).unwrap();
-        let duration = PrettyDuration::new(&(Local::now() - Local.timestamp(timestamp, 0)));
-        println!(
-            "Stopped task `{}` after {}",
-            task,
-            duration
-        );
+        let timestamp = data.running.remove(&task).unwrap();
+        let duration = Local::now() - Local.timestamp(timestamp, 0);
+        let total_duration = data.history.entry(task.clone()).or_default();
+        *total_duration += duration.num_seconds();
+
+        let duration = PrettyDuration::new(&duration);
+        println!("Stopped task `{}` after {}", task, duration);
     }
-
-    Ok(())
-}
-
-fn list(data: &Data) -> Result<(), PunchError> {
-    let mut table = Table::new("{:<} {:>} {:>} {:>} {:>} {:>}");
-    table.add_row(
-        Row::new()
-            .with_cell("Task")
-            .with_cell("DateTime")
-            .with_cell("Days")
-            .with_cell("Hours")
-            .with_cell("Minutes")
-            .with_cell("Seconds"),
-    );
-
-    for (task, timestamp) in data.tasks.iter() {
-        let start = Local.timestamp(*timestamp, 0);
-        let duration = PrettyDuration::new(&(Local::now() - start));
-
-        table.add_row(
-            Row::new()
-                .with_cell(task)
-                .with_cell(start)
-                .with_cell(duration.days)
-                .with_cell(duration.hours)
-                .with_cell(duration.minutes)
-                .with_cell(duration.seconds),
-        );
-    }
-
-    print!("{}", table);
 
     Ok(())
 }
@@ -146,50 +123,5 @@ impl Display for PunchError {
                 write!(f, "The following tasks do not exist: {:?}", tasks)
             }
         }
-    }
-}
-
-struct PrettyDuration {
-    days: i64,
-    hours: i64,
-    minutes: i64,
-    seconds: i64,
-}
-
-impl PrettyDuration {
-    pub fn new(duration: &Duration) -> Self {
-        let days = duration.num_days();
-        let hours = if duration.num_hours() >= 24 {
-            duration.num_hours() % 24
-        } else {
-            duration.num_hours()
-        };
-        let minutes = if duration.num_minutes() >= 60 {
-            duration.num_minutes() % 60
-        } else {
-            duration.num_minutes()
-        };
-        let seconds = if duration.num_seconds() >= 60 {
-            duration.num_seconds() % 60
-        } else {
-            duration.num_seconds()
-        };
-
-        PrettyDuration {
-            days,
-            hours,
-            minutes,
-            seconds,
-        }
-    }
-}
-
-impl Display for PrettyDuration {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} days, {} hours, {} minutes, {} seconds",
-            self.days, self.hours, self.minutes, self.seconds
-        )
     }
 }

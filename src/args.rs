@@ -1,10 +1,11 @@
-use clap::{App, Arg, ArgMatches, SubCommand};
+use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 
 #[derive(Debug)]
 pub enum Action {
     Start(Vec<String>),
     Stop(Vec<String>),
     List,
+    History,
 }
 
 pub fn args() -> Action {
@@ -12,6 +13,7 @@ pub fn args() -> Action {
         ("in", Some(args)) => Action::Start(tasks(args, "IN")),
         ("out", Some(args)) => Action::Stop(tasks(args, "OUT")),
         ("list", _) => Action::List,
+        ("history", _) => Action::History,
         (action, _) => panic!("Invalid action: {}", action),
     }
 }
@@ -26,6 +28,7 @@ fn arg_matches() -> ArgMatches<'static> {
     App::new(env!("CARGO_PKG_NAME"))
         .version(env!("CARGO_PKG_VERSION"))
         .about(env!("CARGO_PKG_DESCRIPTION"))
+        .setting(AppSettings::ArgRequiredElseHelp)
         .subcommand(
             SubCommand::with_name("in")
                 .about("Start working on one or more tasks.")
@@ -51,5 +54,6 @@ fn arg_matches() -> ArgMatches<'static> {
                 ),
         )
         .subcommand(SubCommand::with_name("list").about("List all running tasks."))
+        .subcommand(SubCommand::with_name("history").about("Print history of all tasks."))
         .get_matches()
 }

@@ -14,6 +14,9 @@ punch list
 
 # Stop working on tasks
 punch out task1 [task2...]
+
+# Print history of all tasks
+punch history
 ```
 
 
