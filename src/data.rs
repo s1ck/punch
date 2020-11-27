@@ -1,19 +1,17 @@
-use core::fmt;
-use std::{fs, io};
+use std::{fmt, fs, io};
 use std::collections::HashMap;
-use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
 
 use chrono::{Duration, Local, TimeZone};
 use directories::ProjectDirs;
-use serde::{Deserialize, Serialize};
+use nanoserde::{DeJson, SerJson};
 use tabular::{Row, Table};
 
 const DATA_FILE: &str = "data.json";
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, DeJson, SerJson)]
 pub struct Data {
     // task -> creation date in seconds
     pub running: HashMap<String, i64>,
@@ -36,9 +34,9 @@ impl Data {
     }
 
     fn table<'a, F, I>(tuples: I, duration_fn: F) -> Table
-        where
-            I: IntoIterator<Item=(&'a String, &'a i64)>,
-            F: Fn(i64) -> Duration,
+    where
+        I: IntoIterator<Item = (&'a String, &'a i64)>,
+        F: Fn(i64) -> Duration,
     {
         let mut table = Table::new("{:<} {:>} {:>} {:>} {:>}");
         table.add_row(
@@ -102,8 +100,8 @@ impl PrettyDuration {
     }
 }
 
-impl Display for PrettyDuration {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl fmt::Display for PrettyDuration {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "{} days, {} hours, {} minutes, {} seconds",
@@ -123,12 +121,17 @@ pub fn load() -> Result<Data, io::Error> {
         Err(e) => match e.kind() {
             ErrorKind::NotFound => Ok(Data::default()),
             kind => Err(Error::from(kind)),
-        }
+        },
     }
 }
 
-fn load_inner<R: io::Read>(source: R) -> Result<Data, io::Error> {
-    Ok(serde_json::from_reader(source)?)
+fn load_inner<R: io::Read>(mut source: R) -> Result<Data, io::Error> {
+    let mut buf = String::with_capacity(1024);
+    source.read_to_string(&mut buf)?;
+    match DeJson::deserialize_json(&buf) {
+        Ok(data) => Ok(data),
+        Err(e) => Err(io::Error::new(ErrorKind::Other, e)),
+    }
 }
 
 pub fn store(data: Data) -> Result<(), io::Error> {
@@ -146,8 +149,8 @@ pub fn store(data: Data) -> Result<(), io::Error> {
     Ok(())
 }
 
-fn store_inner<W: io::Write>(data: Data, target: W) -> Result<(), io::Error> {
-    Ok(serde_json::to_writer_pretty(target, &data)?)
+fn store_inner<W: io::Write>(data: Data, mut target: W) -> Result<(), io::Error> {
+    Ok(target.write_all(SerJson::serialize_json(&data).as_bytes())?)
 }
 
 fn data_file() -> Option<PathBuf> {
