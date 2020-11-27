@@ -1,14 +1,14 @@
-use std::collections::HashMap;
-use std::fs::File;
-use std::io::{Error, ErrorKind, Write};
-use std::path::PathBuf;
+use core::fmt;
 use std::{fs, io};
+use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
+use std::fs::File;
+use std::io::{Error, ErrorKind};
+use std::path::PathBuf;
 
 use chrono::{Duration, Local, TimeZone};
-use core::fmt;
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
-use std::fmt::{Display, Formatter};
 use tabular::{Row, Table};
 
 const DATA_FILE: &str = "data.json";
@@ -23,7 +23,7 @@ pub struct Data {
 
 impl Data {
     pub fn table_running(&self) -> Table {
-        Data::table(self.running.iter().collect(), |timestamp| {
+        Data::table(self.running.iter(), |timestamp| {
             Local::now() - Local.timestamp(timestamp, 0)
         })
     }
@@ -35,9 +35,10 @@ impl Data {
         Data::table(tasks, Duration::seconds)
     }
 
-    fn table<F>(tuples: Vec<(&String, &i64)>, duration_fn: F) -> Table
-    where
-        F: Fn(i64) -> Duration,
+    fn table<'a, F, I>(tuples: I, duration_fn: F) -> Table
+        where
+            I: IntoIterator<Item=(&'a String, &'a i64)>,
+            F: Fn(i64) -> Duration,
     {
         let mut table = Table::new("{:<} {:>} {:>} {:>} {:>}");
         table.add_row(
@@ -117,13 +118,17 @@ pub fn load() -> Result<Data, io::Error> {
         None => return Ok(Data::default()),
     };
 
-    match fs::read_to_string(file) {
-        Ok(data) => Ok(serde_json::from_str(&data)?),
+    match File::open(file) {
+        Ok(file) => Ok(load_inner(file)?),
         Err(e) => match e.kind() {
             ErrorKind::NotFound => Ok(Data::default()),
             kind => Err(Error::from(kind)),
-        },
+        }
     }
+}
+
+fn load_inner<R: io::Read>(source: R) -> Result<Data, io::Error> {
+    Ok(serde_json::from_reader(source)?)
 }
 
 pub fn store(data: Data) -> Result<(), io::Error> {
@@ -136,11 +141,13 @@ pub fn store(data: Data) -> Result<(), io::Error> {
         }
     }
 
-    let vec = serde_json::to_vec_pretty(&data).unwrap();
-    let mut file = File::create(file)?;
-    file.write_all(&vec)?;
-    file.flush()?;
+    let file = File::create(file)?;
+    store_inner(data, file)?;
     Ok(())
+}
+
+fn store_inner<W: io::Write>(data: Data, target: W) -> Result<(), io::Error> {
+    Ok(serde_json::to_writer_pretty(target, &data)?)
 }
 
 fn data_file() -> Option<PathBuf> {

@@ -21,16 +21,13 @@ punch history
 */
 extern crate clap;
 
-use core::fmt;
-use fmt::Display;
 use std::error::Error;
+use std::fmt;
 use std::io;
 
 use chrono::{Local, TimeZone};
-use serde::export::Formatter;
 
-use args::args;
-
+use crate::args::args;
 use crate::args::Action;
 use crate::data::{load, store, Data, PrettyDuration};
 
@@ -113,8 +110,8 @@ enum PunchError {
 
 impl Error for PunchError {}
 
-impl Display for PunchError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl fmt::Display for PunchError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             PunchError::ExistingTasks(tasks) => {
                 write!(f, "The following tasks already exist: {:?}", tasks)

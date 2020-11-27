@@ -14,11 +14,11 @@ pub fn args() -> Action {
         ("out", Some(args)) => Action::Stop(tasks(args, "OUT")),
         ("list", _) => Action::List,
         ("history", _) => Action::History,
-        (action, _) => panic!("Invalid action: {}", action),
+        (_, _) => unreachable!(),
     }
 }
 
-fn tasks(args: &ArgMatches, arg_name: &str) -> Vec<String> {
+fn tasks(args: &ArgMatches<'_>, arg_name: &str) -> Vec<String> {
     args.values_of(arg_name)
         .map(|v| v.map(|s| s.to_string()).collect::<Vec<_>>())
         .unwrap_or_default()
