@@ -1,11 +1,15 @@
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 
-#[derive(Debug)]
 pub enum Action {
     Start(Vec<String>),
     Stop(Vec<String>),
     List,
-    History,
+    History(HistoryMode),
+}
+
+pub enum HistoryMode {
+    Sum,
+    Average,
 }
 
 pub fn args() -> Action {
@@ -13,7 +17,10 @@ pub fn args() -> Action {
         ("in", Some(args)) => Action::Start(tasks(args, "IN")),
         ("out", Some(args)) => Action::Stop(tasks(args, "OUT")),
         ("list", _) => Action::List,
-        ("history", _) => Action::History,
+        ("history", Some(args)) if args.is_present("average") => {
+            Action::History(HistoryMode::Average)
+        }
+        ("history", _) => Action::History(HistoryMode::Sum),
         (_, _) => unreachable!(),
     }
 }
@@ -54,6 +61,23 @@ fn arg_matches() -> ArgMatches<'static> {
                 ),
         )
         .subcommand(SubCommand::with_name("list").about("List all running tasks."))
-        .subcommand(SubCommand::with_name("history").about("Print history of all tasks."))
+        .subcommand(
+            SubCommand::with_name("history")
+                .about("Print history of all tasks.")
+                .arg(
+                    Arg::with_name("sum")
+                        .long("total")
+                        .short("t")
+                        .help("Print the sum of durations for each task.")
+                        .required(false),
+                )
+                .arg(
+                    Arg::with_name("average")
+                        .long("average")
+                        .short("a")
+                        .help("Print the average of durations for each task.")
+                        .required(false),
+                ),
+        )
         .get_matches()
 }

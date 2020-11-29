@@ -14,8 +14,8 @@ punch list
 # Stop working on tasks
 punch out task1 [task2...]
 
-# Print history of all tasks
-punch history
+# Print durations of all previous tasks
+punch history [--average|--total]
 ```
 
 */
@@ -44,8 +44,8 @@ fn main() -> Result<(), io::Error> {
             print!("{}", data.table_running());
             Ok(())
         }
-        Action::History => {
-            print!("{}", data.table_history());
+        Action::History(kind) => {
+            print!("{}", data.table_history(kind));
             Ok(())
         }
     };
@@ -92,8 +92,8 @@ fn stop(data: &mut Data, tasks: Vec<String>) -> Result<(), PunchError> {
     for task in tasks {
         let timestamp = data.running.remove(&task).unwrap();
         let duration = Local::now() - Local.timestamp(timestamp, 0);
-        let total_duration = data.history.entry(task.clone()).or_default();
-        *total_duration += duration.num_seconds();
+        let durations = data.history.entry(task.clone()).or_default();
+        durations.push(duration.num_seconds());
 
         let duration = PrettyDuration::new(&duration);
         println!("Stopped task `{}` after {}", task, duration);

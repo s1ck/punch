@@ -5,10 +5,11 @@ use std::path::PathBuf;
 use std::{fmt, fs, io};
 
 use chrono::{Duration, Local, TimeZone};
+use comfy_table::presets::UTF8_FULL;
 use comfy_table::{Cell, Table};
 use directories::ProjectDirs;
 use nanoserde::{DeJson, SerJson};
-use comfy_table::presets::UTF8_FULL;
+use crate::args::HistoryMode;
 
 const DATA_FILE: &str = "data.json";
 
@@ -16,27 +17,39 @@ const DATA_FILE: &str = "data.json";
 pub struct Data {
     // task -> creation date in seconds
     pub running: HashMap<String, i64>,
-    // task -> duration in seconds
-    pub history: HashMap<String, i64>,
+    // task -> all durations per task in seconds
+    pub history: HashMap<String, Vec<i64>>,
 }
 
 impl Data {
     pub fn table_running(&self) -> Table {
-        Data::table(self.running.iter(), |timestamp| {
-            Local::now() - Local.timestamp(timestamp, 0)
-        })
+        Data::table(
+            self.running.iter().map(|(task, duration)| (task, duration.clone())),
+            |timestamp| Local::now() - Local.timestamp(timestamp, 0),
+        )
     }
 
-    pub fn table_history(&self) -> Table {
+    pub fn table_history(&self, kind: HistoryMode) -> Table {
         // Sort tasks by descending duration
-        let mut tasks = self.history.iter().collect::<Vec<_>>();
+        let mut tasks = self
+            .history
+            .iter()
+            .map(|(task, durations)| {
+                let sum = durations.iter().sum::<i64>();
+                match kind {
+                    HistoryMode::Sum => (task, sum),
+                    HistoryMode::Average => (task, sum / durations.len() as i64)
+                }
+            })
+            .collect::<Vec<_>>();
         tasks.sort_by_key(|&(_, v)| -v);
+
         Data::table(tasks, Duration::seconds)
     }
 
     fn table<'a, F, I>(tuples: I, duration_fn: F) -> Table
     where
-        I: IntoIterator<Item = (&'a String, &'a i64)>,
+        I: IntoIterator<Item = (&'a String, i64)>,
         F: Fn(i64) -> Duration,
     {
         let mut table = Table::new();
@@ -45,7 +58,7 @@ impl Data {
             .set_header(vec!["Task", "Days", "Hours", "Minutes", "Seconds"]);
 
         for (task, timestamp) in tuples {
-            let duration = PrettyDuration::new(&duration_fn(*timestamp));
+            let duration = PrettyDuration::new(&duration_fn(timestamp));
 
             let row = vec![
                 Cell::new(task),
