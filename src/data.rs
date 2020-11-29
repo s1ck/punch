@@ -1,13 +1,14 @@
-use std::{fmt, fs, io};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
+use std::{fmt, fs, io};
 
 use chrono::{Duration, Local, TimeZone};
+use comfy_table::{Cell, Table};
 use directories::ProjectDirs;
 use nanoserde::{DeJson, SerJson};
-use tabular::{Row, Table};
+use comfy_table::presets::UTF8_FULL;
 
 const DATA_FILE: &str = "data.json";
 
@@ -38,27 +39,23 @@ impl Data {
         I: IntoIterator<Item = (&'a String, &'a i64)>,
         F: Fn(i64) -> Duration,
     {
-        let mut table = Table::new("{:<} {:>} {:>} {:>} {:>}");
-        table.add_row(
-            Row::new()
-                .with_cell("Task")
-                .with_cell("Days")
-                .with_cell("Hours")
-                .with_cell("Minutes")
-                .with_cell("Seconds"),
-        );
+        let mut table = Table::new();
+        table
+            .load_preset(UTF8_FULL)
+            .set_header(vec!["Task", "Days", "Hours", "Minutes", "Seconds"]);
 
         for (task, timestamp) in tuples {
             let duration = PrettyDuration::new(&duration_fn(*timestamp));
 
-            table.add_row(
-                Row::new()
-                    .with_cell(task)
-                    .with_cell(duration.days)
-                    .with_cell(duration.hours)
-                    .with_cell(duration.minutes)
-                    .with_cell(duration.seconds),
-            );
+            let row = vec![
+                Cell::new(task),
+                Cell::new(duration.days),
+                Cell::new(duration.hours),
+                Cell::new(duration.minutes),
+                Cell::new(duration.seconds),
+            ];
+
+            table.add_row(row);
         }
 
         table
