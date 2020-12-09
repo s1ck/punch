@@ -1,5 +1,5 @@
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
-use dialoguer::Select;
+use dialoguer::MultiSelect;
 
 use crate::data::Data;
 
@@ -52,13 +52,15 @@ fn tasks(data: &Data, args: &ArgMatches<'_>, arg_name: &str) -> Vec<String> {
             return tasks;
         }
 
-        let selection = Select::new()
-            .default(0)
+        let selected = MultiSelect::new()
             .items(&selections[..])
             .interact()
             .unwrap();
 
-        tasks = vec![selections[selection].to_string()];
+        tasks = selections.into_iter().enumerate()
+            .filter(|(idx, _)| selected.contains(idx))
+            .map(|(_, task)| task.to_string())
+            .collect::<Vec<_>>();
     }
 
     tasks
