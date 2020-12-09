@@ -4,12 +4,13 @@ use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
 use std::{fmt, fs, io};
 
+use crate::args::HistoryMode;
+
 use chrono::{Duration, Local, TimeZone};
 use comfy_table::presets::UTF8_FULL;
 use comfy_table::{Cell, Table};
 use directories::ProjectDirs;
 use nanoserde::{DeJson, SerJson};
-use crate::args::HistoryMode;
 
 const DATA_FILE: &str = "data.json";
 
@@ -24,7 +25,9 @@ pub struct Data {
 impl Data {
     pub fn table_running(&self) -> Table {
         Data::table(
-            self.running.iter().map(|(task, duration)| (task, duration.clone())),
+            self.running
+                .iter()
+                .map(|(task, duration)| (task, duration.clone())),
             |timestamp| Local::now() - Local.timestamp(timestamp, 0),
         )
     }
@@ -38,7 +41,7 @@ impl Data {
                 let sum = durations.iter().sum::<i64>();
                 match kind {
                     HistoryMode::Sum => (task, sum),
-                    HistoryMode::Average => (task, sum / durations.len() as i64)
+                    HistoryMode::Average => (task, sum / durations.len() as i64),
                 }
             })
             .collect::<Vec<_>>();

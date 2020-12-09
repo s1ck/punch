@@ -12,6 +12,7 @@ default-run = "punch"
 clap = "2.33.3"
 chrono = "0.4.19"
 comfy-table = "1.3.0"
+dialoguer = "0.7.1"
 directories = "3.0.1"
 nanoserde = "0.1.20"
 

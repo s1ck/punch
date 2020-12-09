@@ -37,7 +37,7 @@ mod data;
 fn main() -> Result<(), io::Error> {
     let mut data = load()?;
 
-    let result = match args() {
+    let result = match args(&data) {
         Action::Start(tasks) => start(&mut data, tasks),
         Action::Stop(tasks) => stop(&mut data, tasks),
         Action::List => {
