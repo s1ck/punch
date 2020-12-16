@@ -41,11 +41,11 @@ fn main() -> Result<(), io::Error> {
         Action::Start(tasks) => start(&mut data, tasks),
         Action::Stop(tasks) => stop(&mut data, tasks),
         Action::List => {
-            print!("{}", data.table_running());
+            println!("{}", data.table_running());
             Ok(())
         }
         Action::History(kind) => {
-            print!("{}", data.table_history(kind));
+            println!("{}", data.table_history(kind));
             Ok(())
         }
     };
